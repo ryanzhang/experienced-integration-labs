@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+  <!-- This reference just lets all of our routes use the same
+  connection pool set up in the mq-service project -->
+  <!--osgi:reference id="activemqService" interface="org.apache.camel.Component"/>
+
+  <bean id="demographicImpl" class="com.redhat.usecase.service.impl.DEIMServiceImpl" />
+  <jaxrs:server id="demoGraphicsService" address="http://localhost:9098/cxf/demos">
+    <jaxrs:serviceBeans>
+      <ref bean="demographicImpl" />
+    </jaxrs:serviceBeans>
+  </jaxrs:server-->
+  
+  <camelContext xmlns="http://camel.apache.org/schema/spring" id="inboundRest">
+    <dataFormats>
+      <jaxb id="personDataFormat" contextPath="com.customer.app"
+        partClass="com.customer.app.Person" />
+    </dataFormats>
+    <restConfiguration bindingMode="off" component="servlet" contextPath="/rest" />
+    <rest id="rest-e0cd6e73-45e0-4834-a5d3-17070409a066" apiDocs="true" path="/service">
+      <post id="83790b76-0372-420b-974f-125b31cb82bf" uri="/demos">
+        <to uri= "direct:inbox" />
+      </post>
+    </rest>
+    <route id="handleRest">
+      <from id="_from1" uri="direct:inbox" />
+      <log id="_log1" message="Xml received" />
+      <to id="_to1" uri="direct:deim_internal" />
+    </route>
+    <route id="addPerson">
+      <from id="_from2" uri="direct:deim_internal" />
+      <unmarshal ref="personDataFormat" id="_unmarshal1" />
+      <log id="_log2" message="Start to set customerId headers=${body.getLocalid}" />
+      <setHeader headerName="customerId" id="_setHeader1">
+        <simple>${body.getLocalid}</simple>
+      </setHeader>
+      <log id="_log3" message="Marshalling object to xml" />
+      <marshal ref="personDataFormat" id="_mashal1" />
+      <log id="_log4" message="Add to amq queue" />
+      <setExchangePattern id="_setExchangePattern1" pattern="InOnly"/>
+      <to id="_to2" uri="amqp:queue:q.empi.deim.in" />
+      <log id="_log5" message="Set body" />
+      <setBody id="_setBody1">
+        <simple><![CDATA[<reply id="${header.customerId}">Done!</reply>]]></simple>
+      </setBody>
+    </route>
+  </camelContext>
+
+</beans>
