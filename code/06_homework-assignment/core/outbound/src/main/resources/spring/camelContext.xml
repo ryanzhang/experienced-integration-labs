@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:cxf="http://camel.apache.org/schema/cxf"
+    xmlns:osgi="http://www.springframework.org/schema/osgi"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans        http://www.springframework.org/schema/beans/spring-beans.xsd        http://www.springframework.org/schema/osgi        http://www.springframework.org/schema/osgi/spring-osgi.xsd                 http://camel.apache.org/schema/spring        http://camel.apache.org/schema/spring/camel-spring.xsd  http://camel.apache.org/schema/cxf  http://camel.apache.org/schema/cxf/camel-cxf.xsd">
+  
+  <!--bean id="serviceStrategy"
+		class="org.apache.camel.dataformat.soap.name.ServiceInterfaceStrategy">
+		<constructor-arg value="com.sun.mdm.index.webservice.PersonEJB" />
+		<constructor-arg value="true" />
+	</bean-->
+  <bean class="com.sun.mdm.index.webservice.NextgateWSImplBean" id="nextgateWSImplBean" />
+
+	<cxf:cxfEndpoint id="nextgateWebService"
+		address="http://localhost:9099/ws/nextgate"
+		serviceClass="com.redhat.outbound.service.NextgateWS">
+	</cxf:cxfEndpoint>
+
+  <camelContext xmlns="http://camel.apache.org/schema/spring" id="outboundSOAP" >
+    <route id="_route1">
+            <from id="_from1" uri="cxf:bean:nextgateWebService"/>
+            <bean id="_bean1" method="updatePerson" ref="nextgateWSImplBean"/>
+    </route>
+    <route id="_OutBoundRoute1">
+      <from id="_from1" uri="amqp:q.empi.nextgate.out" />
+
+			<log id="_log1" message="Message received converting >>>"  />
+
+			<convertBodyTo id="_convertBodyTo1" type="String" />
+
+			<log id="_log2" message="Calling Webservice >>> ${body}" />
+
+			<to id="_to1" uri="cxf:bean:personEndpoint" />
+
+			<log id="_log2" message="Webservice called: ${body} >>>"  />
+
+			<onException id="_onException1">
+				<exception>java.net.ConnectException</exception>
+
+				<redeliveryPolicy maximumRedeliveries="3" />
+
+        <setExchangePattern id="_setExchangePattern1" pattern="InOnly"/>
+				<to id="_to2" uri="amqp:q.empi.nextgate.dlq" />
+			</onException>
+		</route>
+
+  </camelContext>
+
+</beans>

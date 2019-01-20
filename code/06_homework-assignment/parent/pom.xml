@@ -27,6 +27,9 @@
 
     <jboss.fuse.bom.version>7.2.0.fuse-720020-redhat-00001</jboss.fuse.bom.version>
     <maven.bundle.plugin.version>2.3.7</maven.bundle.plugin.version>
+    
+    <!-- Spring Boot default profile in order to use an embedded database -->
+    <run.profiles>dev</run.profiles>
   </properties>
 
   <dependencyManagement>
@@ -62,9 +65,14 @@
           <version>${jboss.fuse.bom.version}</version>
         </plugin>
         <plugin>
-        <groupId>org.jboss.redhat-fuse</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${jboss.fuse.bom.version}</version>
+          <groupId>org.jboss.redhat-fuse</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${jboss.fuse.bom.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.camel</groupId>
+          <artifactId>camel-maven-plugin</artifactId>
+          <version>${jboss.fuse.bom.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

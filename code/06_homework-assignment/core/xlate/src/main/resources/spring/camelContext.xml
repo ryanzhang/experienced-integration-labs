@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:camel="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+  <bean id="serviceStrategy"
+    class="org.apache.camel.dataformat.soap.name.ServiceInterfaceStrategy">
+    <constructor-arg value="com.sun.mdm.index.webservice.PersonEJB" />
+    <constructor-arg value="true" />
+  </bean>
+
+  <camelContext id="xlatePerson" xmlns="http://camel.apache.org/schema/spring" trace="false" typeConverterStatisticsEnabled="true">
+
+    <dataFormats>
+      <soapjaxb contextPath="com.sun.mdm.index.webservice" id="nextgateFormat" elementNameStrategyRef="serviceStrategy" />
+      <jaxb id="personFormat" contextPath="com.customer.app" partClass="com.customer.app.Person" />
+    </dataFormats>
+
+    <route id="translate">
+      <from id="_from1" uri="amqp:queue:q.empi.deim.in" />
+			
+			<log id="_log1" message="Message received converting to String >>>" />
+			
+			<convertBodyTo type="String" />
+			
+			<log id="_log2" message="Unmarshalling >>>" />
+			
+			<unmarshal id="_unmarshal1" ref="personFormat" />
+			
+			<log id="_log3" message="Converting obj to ExecuteMatchUpdate >>>" />
+			
+			<convertBodyTo id="_convertBodyTo1" type="com.sun.mdm.index.webservice.ExecuteMatchUpdate" />
+			
+			<log id="_log4" message="Marshalling >>>" />
+			
+			<marshal ref="nextgateFormat" />
+			
+			<log id="_log5" message="Sending to nextgate queue>>>" />
+
+			<setExchangePattern id="_setExchangePattern1" pattern="InOnly"/>
+			<to id="_to1" uri="amqp:q.empi.nextgate.out" />
+			
+			<onException id="_onException1">
+				<exception>org.apache.camel.TypeConversionException</exception>
+				
+				<redeliveryPolicy maximumRedeliveries="3"/>
+        <log id="_log6" message=">>Exception:${body}" />
+			  <setExchangePattern id="_setExchangePattern2" pattern="InOnly"/>	
+				<to id="_to2" uri="amqp:q.empi.transform.dlq" />
+			</onException>
+
+    </route>
+
+  </camelContext>
+
+</beans>

@@ -40,6 +40,12 @@ Make sure that the following queue are created in the etc/broker.xml
                <queue name="q.empi.nextgate.dlq" />
             </anycast>
          </address>
+         <address name="q.empi.transform.dlq">
+            <anycast>
+               <queue name="q.empi.transform.dlq" />
+            </anycast>
+         </address>
+
 
 Make sure that amqp protocol and 5276 port is up.
 
@@ -49,6 +55,8 @@ Make sure that amqp protocol and 5276 port is up.
 Start AMQ7
 
     ./artemis-service run
+    Starting artemis-service
+    artemis-service is now running (29960)
 
 Check
 
@@ -94,10 +102,40 @@ In the inbound service terminal:
 As you can see, the xml has been proceeded by rest and return the Done acknowledge.
 
 ### 3) Run the xlate service (In a seperate terminal)
-mvn spring-boot:run
+    
+    mvn spring-boot:run
+    
+    08:46:08.194 [AmqpProvider :(1):[amqp://localhost:5672]] INFO  o.a.q.jms.sasl.SaslMechanismFinder - Best match for SASL auth was: SASL-PLAIN
+    08:46:08.257 [AmqpProvider :(1):[amqp://localhost:5672]] INFO  org.apache.qpid.jms.JmsConnection - Connection ID:92f6261b-5c62-429b-99dc-694d46d19046:1 connected to remote Broker: amqp://localhost:5672
+    08:46:08.257 [main] INFO  o.a.camel.spring.SpringCamelContext - Route: translate started and consuming from: amqp://queue:q.empi.deim.in
+    08:46:08.258 [main] INFO  o.a.camel.spring.SpringCamelContext - Total 1 routes, of which 1 are started
+    08:46:08.258 [main] INFO  o.a.camel.spring.SpringCamelContext - Apache Camel 2.21.0.fuse-720050-redhat-00001 (CamelContext: MyCamel) started in 1.501 seconds
+    08:46:08.326 [main] INFO  o.s.b.c.e.u.UndertowEmbeddedServletContainer - Undertow started on port(s) 8181 (http)
+    08:46:08.330 [main] INFO  o.s.c.s.DefaultLifecycleProcessor - Starting beans in phase 0
+    08:46:08.341 [main] INFO  o.s.b.a.e.jmx.EndpointMBeanExporter - Located managed bean 'healthEndpoint': registering with JMX server as MBean [org.springframework.boot:type=Endpoint,name=healthEndpoint]
+    08:46:08.386 [main] INFO  o.s.b.c.e.u.UndertowEmbeddedServletContainer - Undertow started on port(s) 8180 (http)
+    08:46:08.391 [main] INFO  c.r.customer.springboot.Application - Started Application in 6.794 seconds (JVM running for 9.975)
+    08:46:08.444 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Message received converting to String >>>
+    08:46:08.446 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Unmarshalling >>>
+    08:46:08.453 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  o.a.c.converter.jaxp.StaxConverter - Created XMLInputFactory: com.sun.xml.internal.stream.XMLInputFactoryImpl@25e18d07. DOMSource/DOMResult may have issues with com.sun.xml.internal.stream.XMLInputFactoryImpl@25e18d07. We suggest using Woodstox.
+    08:46:08.476 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Converting obj to ExecuteMatchUpdate >>>
+    08:46:08.478 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Marshalling >>>
+    08:46:08.497 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Sending to nextgate queue>>>
+    08:46:08.549 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Message received converting to String >>>
+    08:46:08.549 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Unmarshalling >>>
+    08:46:08.558 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Converting obj to ExecuteMatchUpdate >>>
+    08:46:08.558 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Marshalling >>>
+    08:46:08.559 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Sending to nextgate queue>>>
+    08:49:53.213 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Message received converting to String >>>
+    08:49:53.213 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Unmarshalling >>>
+    08:49:53.218 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Converting obj to ExecuteMatchUpdate >>>
+    08:49:53.218 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Marshalling >>>
+    08:49:53.219 [Camel (MyCamel) thread #1 - JmsConsumer[q.empi.deim.in]] INFO  translate - Sending to nextgate queue>>>
+
+As you can see, the message in the deim.in queue has been proceeded and output to another queue nextgate.out
 
 ### 4) Run the outbound service (In a seperate terminal)
-mvn camel:run
+    mvn camel:run
 
 ### 5) Final Test (In a seperate terminal):
 curl -X http://localhost:9098/rest/demos -@test/data/PatientDemographics.xml
